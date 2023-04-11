@@ -12,7 +12,7 @@ import cors from "cors"
 const app = express();
 
 dotenv.config()
-app.use(cors({origin:true,allowedHeaders:["*"],credentials:true,methods:['GET', 'PUT', 'POST']}))
+app.use(cors())
 app.use(express.json())
 
 app.listen(4000,function(){
@@ -20,7 +20,7 @@ app.listen(4000,function(){
 })
 
 app.post("/admin_giris",async (req,res)=>{
-    
+    res.setHeader("Access-Control-Allow-Credentials","true")
     console.log("admin sayfası giriş butonuna basıldı")
     const {isim,sifre} = req.body;
     const user = await admin.findOne({isim,sifre})
@@ -34,6 +34,7 @@ app.post("/admin_giris",async (req,res)=>{
 })
 
 app.post("/admin_post_create",async (req,res)=>{
+    res.setHeader("Access-Control-Allow-Credentials","true")
     console.log("post oluşturma isteği geldi");
     const {baslik,icerik} = req.body;
 
@@ -63,6 +64,7 @@ app.post("/admin_post_create",async (req,res)=>{
     })    
 })
 app.post("/user/login",async (req,res)=>{
+    res.setHeader("Access-Control-Allow-Credentials","true")
     console.log("user sayfası giriş butonuna basıldı")
     const {isim,sifre} = req.body;
     const foundUser = await user.findOne({isim,sifre})
@@ -76,6 +78,7 @@ app.post("/user/login",async (req,res)=>{
 })
 
 app.post("/user/register",async (req,res)=>{
+    res.setHeader("Access-Control-Allow-Credentials","true")
     console.log("kayıt olma isteği geldi");
     const {isim,sifre} = req.body;
     
@@ -112,26 +115,31 @@ app.post("/user/register",async (req,res)=>{
     })
 })
 app.use("/user/get_one_post",async (req,res)=>{
+    res.setHeader("Access-Control-Allow-Credentials","true")
     const {id} = req.body;
     PostModel.findOne({id:id}).then(data=>{res.status(200).send({"post":data})}).catch(err=>{console.log(err)})
 })
 app.use("/user/get_posts",async (req,res)=>{
+    res.setHeader("Access-Control-Allow-Credentials","true")
     const pagination = 8 ;
     const {pageNumber} = req.body;
     PostModel.find({}).sort({"id" : "descending"}).skip((pageNumber-1)*pagination).limit(pagination).then(data=>{res.status(200).send({"postlar":data})}).catch(err=>{console.log(err)})
 })
 app.use("/user/get_lots_posts",async (req,res)=>{
+    res.setHeader("Access-Control-Allow-Credentials","true")
     const pagination = 30 ;
     const {pageNumber} = req.body;
     PostModel.find({}).sort({"id" : "descending"}).skip((pageNumber-1)*pagination).limit(pagination).then(data=>{res.status(200).send({"postlar":data})}).catch(err=>{console.log(err)})
 })
 
 app.use("/user/get_comments",async (req,res)=>{
+    res.setHeader("Access-Control-Allow-Credentials","true")
     console.log("Yorumlar Yükleniyor");
     const {id} = req.body;
     PostModel.findOne({id:id}).then(data=>{res.status(200).send({"yorumlar":data.yorumlar})}).catch(err=>{console.log(err)})
 })
 app.use("/user/post_comment",async (req,res)=>{
+    res.setHeader("Access-Control-Allow-Credentials","true")
     console.log("user sayfasında yorum yapma isteği geldi")
     const {yorum,id,kullaniciId,kullaniciIsim} = req.body;
     PostModel.findOneAndUpdate({id:id},{$push:{yorumlar:{kullaniciId:kullaniciId,yorum:yorum,kullaniciIsim:kullaniciIsim}}}).then(
