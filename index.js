@@ -101,8 +101,8 @@ app.post("/user/register",async (req,res)=>{
                     seqId=cd.seq
                     console.log("kullanici id oluşturuldu => "+seqId)
                 }
-        
-                const newUser = await UserModel.create({isim,sifre:bcrypt.hash(sifre,6),id:seqId})
+                const hashedsifre=await bcrypt.hash(sifre,6);
+                const newUser = await UserModel.create({isim,sifre:hashedsifre,id:seqId})
                 if(newUser){
                     console.log("kullanici oluşturma başarili")
                     console.log(newUser)
