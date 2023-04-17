@@ -8,7 +8,7 @@ import UserModel from "./Models/userSchema.js"
 import counter from "./Models/counterSchema.js"
 import usercounter from "./Models/usercounterSchema.js";
 import cors from "cors"
-
+import bcrypt from "bcryptjs"
 const app = express();
 
 dotenv.config()
@@ -67,14 +67,15 @@ app.post("/user/login",async (req,res)=>{
     res.setHeader("Access-Control-Allow-Credentials","true")
     console.log("user sayfası giriş butonuna basıldı")
     const {isim,sifre} = req.body;
-    const foundUser = await user.findOne({isim,sifre})
-    if(foundUser){
-        console.log(user,"kullanıcı şifre ve isim doğru")
-        res.status(200).json({foundUser,message:"kullanıcı şifre ve isim doğru"})
+    const foundUser = await user.findOne({isim})
+    if(!foundUser){
+        res.status(418).send({message:"kullanıcı ismi hatalı"})   
     }
-    else{
-        res.status(418).send({message:"kullanıcı şifre veya isim yanlış"})   
-    } 
+    const  isPasswordCorrect = await bcrypt.compare(sifre,foundUser.sifre)
+    if(!isPasswordCorrect){
+        res.status(418).send({message:"şifre hatalı"})   
+    }
+    return res.status(200).send(foundUser,{message:"giriş başarılı"})
 })
 
 app.post("/user/register",async (req,res)=>{
@@ -101,7 +102,7 @@ app.post("/user/register",async (req,res)=>{
                     console.log("kullanici id oluşturuldu => "+seqId)
                 }
         
-                const newUser = await UserModel.create({isim,sifre,id:seqId})
+                const newUser = await UserModel.create({isim,sifre:bcrypt.hash(sifre,6),id:seqId})
                 if(newUser){
                     console.log("kullanici oluşturma başarili")
                     console.log(newUser)
