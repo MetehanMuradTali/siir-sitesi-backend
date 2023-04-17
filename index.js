@@ -75,7 +75,7 @@ app.post("/user/login",async (req,res)=>{
     if(!isPasswordCorrect){
         res.status(418).send({message:"şifre hatalı"})   
     }
-    return res.status(200).send(foundUser,{message:"giriş başarılı"})
+    res.status(200).json({foundUser,message:"kullanıcı şifre ve isim doğru"})
 })
 
 app.post("/user/register",async (req,res)=>{
