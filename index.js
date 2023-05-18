@@ -18,7 +18,9 @@ app.use(express.json())
 app.listen(4000,function(){
     mongoose.connect(process.env.MongoDB_Url).then(console.log("Veri tabanına bağlanma başarılı")).catch(err=> console.log(err))
 })
-
+app.use("/deneme",async(req,res)=>{
+    res.status(200).json({"message":"oldu"})
+})
 app.post("/admin_giris",async (req,res)=>{
     res.setHeader("Access-Control-Allow-Credentials","true")
     const {isim,sifre} = req.body;
