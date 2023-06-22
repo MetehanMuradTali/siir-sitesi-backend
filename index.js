@@ -1,14 +1,16 @@
 import  express  from "express";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
-import admin from "./Models/adminSchema.js"
-import user from "./Models/userSchema.js"
-import PostModel from "./Models/postSchema.js";
-import UserModel from "./Models/userSchema.js"
-import counter from "./Models/counterSchema.js"
-import usercounter from "./Models/usercounterSchema.js";
 import cors from "cors"
 import bcrypt from "bcryptjs"
+import User from "./Models/userSchema.js"
+import Post from './Models/postSchema.js';
+import Comment from './Models/commentSchema.js'
+import CommentCounter from './Models/commentcounterSchema.js'
+import PostCounter from './Models/postCounterSchema.js'
+
+
+
 const app = express();
 
 dotenv.config()
@@ -18,119 +20,154 @@ app.use(express.json())
 app.listen(4000,function(){
     mongoose.connect(process.env.MongoDB_Url).then(console.log("Veri tabanına bağlanma başarılı")).catch(err=> console.log(err))
 })
-app.use("/deneme",async(req,res)=>{
-    res.status(200).json({"message":"oldu"})
+app.post("/User/Register",async (req,res)=>{
+    const isim = req.body.isim
+    const sifre = req.body.sifre
+    User.findOne({isim:isim}).then(async data=>{
+        if(data){
+            res.status(418).send({meesage:"Kullanıcı ismi alınmış.Başka kullanici ismi seçin"})
+        }
+        else{
+            const hashedsifre=await bcrypt.hash(sifre,6);
+            await User.create({isim,sifre:hashedsifre}).then(newUser=>{
+                console.log("kullanici oluşturma başarili")
+                console.log(newUser)
+                res.status(201).json(newUser)
+            }).catch(err=>{
+                res.status(418).send({meesage:"kullanıcı oluşturulamadi"})
+            })
+          
+        }
+    })
 })
-app.post("/admin_giris",async (req,res)=>{
-    res.setHeader("Access-Control-Allow-Credentials","true")
+app.post("/User/Login",async (req,res)=>{
     const {isim,sifre} = req.body;
-    const user = await admin.findOne({isim,sifre})
-    if(user){
-        res.status(200).json({user,message:"admin şifre ve isim doğru"})
+    const foundUser = await User.findOne({isim})
+    if(!foundUser){
+        res.json({error:"kullanıcı ismi hatalı"})   
     }
     else{
-        res.status(400).send({message:"admin şifre veya isim yanlış"})   
-    } 
+        const  isPasswordCorrect = await bcrypt.compare(sifre,foundUser.sifre)
+        if(!isPasswordCorrect){
+            res.json({error:"şifre hatalı"})   
+        }
+        else{
+            res.json(foundUser)
+        }
+    }
+    
 })
+app.post("/User/Post",async (req,res)=>{
+    const {id} = req.body;
+    Post.findOne({id:parseInt(id)}).then(data=>{console.log(data);res.status(200).json({"post":data})}).catch(err=>{console.log(err)})
+})
+app.post("/User/Posts",async (req,res)=>{
+    const pagination = 2 ;
+    const {pageNumber} = req.body;
+    console.log(pageNumber)
+    Post.find({}).sort({"id" : "descending"}).skip((pageNumber-1)*pagination).limit(pagination).then(data=>{res.status(200).json({"postlar":data})}).catch(err=>{console.log(err)})
+})
+//
 
-app.post("/admin_post_create",async (req,res)=>{
-    res.setHeader("Access-Control-Allow-Credentials","true")
-    const {baslik,icerik} = req.body;
 
-    counter.findOneAndUpdate({id:"autoval"},{"$inc":{"seq":1}},{new:true},async (err,cd)=>{
+app.post("/User/AllPost",async (req,res)=>{
+    const pagination = 20 ;
+    const {pageNumber} = req.body;
+    Post.find({}).sort({"id" : "descending"}).skip((pageNumber-1)*pagination).limit(pagination).then(data=>{res.status(200).json({"postlar":data})}).catch(err=>{console.log(err)})
+})
+app.post("/Admin/Post",async (req,res)=>{
+    const {id} = req.body;
+    Post.findOne({id:parseInt(id)}).then(data=>{console.log(data);res.status(200).json({"post":data})}).catch(err=>{console.log(err)})
+})
+app.post("/Admin/AllPost",async (req,res)=>{
+    const pagination = 20 ;
+    const {pageNumber} = req.body;
+    Post.find({}).sort({"id" : "descending"}).skip((pageNumber-1)*pagination).limit(pagination).then(data=>{res.status(200).json({"postlar":data})}).catch(err=>{console.log(err)})
+})
+app.use("/Admin/Delete_Post",async (req,res)=>{
+    const {post_id} = req.body;
+    Post.findOneAndDelete({id:post_id}).then((deleted_value=>{
+        if(deleted_value){
+            res.json({success:true})
+        }
+        else{
+            res.json({success:false})
+        }
+    }))
+})
+app.use("/Admin/Update_Post",async (req,res)=>{
+    const {FormData} = req.body
+    Post.findOneAndUpdate({id:FormData.post_id},{baslik:FormData.post_baslik,icerik:FormData.post_icerik},{new:true}).then((updated_value=>{
+        if(updated_value){
+            res.json({success:true})
+        }
+        else{
+            res.json({success:false})
+        }
+    }))
+})
+app.use("/Admin/Create_Post",async (req,res)=>{
+    const {FormData} = req.body
+    PostCounter.findOneAndUpdate({id:"autoval"},{"$inc":{"seq":1}},{new:true}).then(async (cd)=>{
         let seqId;
         if(cd==null){
-            const newval = new counter({id:"autoval",seq:1})
+            const newval = new PostCounter({id:"autoval",seq:1})
             newval.save();
             seqId=1;
         }
         else{
             seqId=cd.seq
         }
-        const newPost = await PostModel.create({baslik,icerik,id:seqId})
+        const newPost = await Post.create({id:seqId,baslik:FormData.post_baslik,icerik:FormData.post_icerik})
         if(newPost){
-            res.status(201).json(newPost)
+            res.json({success:true})
         }
         else{
-            res.status(400).send({meesage:"post oluşturulamadi"})
+            res.json({success:false})
         }
-    })    
+    }) 
 })
-app.post("/user/login",async (req,res)=>{
-    res.setHeader("Access-Control-Allow-Credentials","true")
-    const {isim,sifre} = req.body;
-    const foundUser = await user.findOne({isim})
-    if(!foundUser){
-        res.status(418).send({message:"kullanıcı ismi hatalı"})   
-    }
-    const  isPasswordCorrect = await bcrypt.compare(sifre,foundUser.sifre)
-    if(!isPasswordCorrect){
-        res.status(418).send({message:"şifre hatalı"})   
-    }
-    else{
-        res.status(200).send({message:"kullanıcı şifre ve isim doğru"})
-    }
-})
-
-app.post("/user/register",async (req,res)=>{
-    res.setHeader("Access-Control-Allow-Credentials","true")
-    const {isim,sifre} = req.body;
+app.use("/User/Add_Comment",async (req,res)=>{
+    const {comment,id,kullaniciIsim} = req.body;
     
-    const foundUser = user.findOne({isim:isim}).then(data=>{
-        if(data){
-            res.status(418).send({meesage:"Kullanıcı ismi alınmış.Başka kullanici ismi seçin"})
+    CommentCounter.findOneAndUpdate({id:"autoval"},{"$inc":{"seq":1}},{new:true}).then(async (cd)=>{
+        let seqId;
+        if(cd==null){
+            const newval = new CommentCounter({id:"autoval",seq:1})
+            newval.save();
+            seqId=1;
         }
         else{
-            usercounter.findOneAndUpdate({id:"autoval"},{"$inc":{"seq":1}},{new:true},async (err,cd)=>{
-                let seqId;
-                if(cd==null){
-                    const newval = new usercounter({id:"autoval",seq:1})
-                    newval.save();
-                    seqId=1;
-                }
-                else{
-                    
-                    seqId=cd.seq
-                }
-                const hashedsifre=await bcrypt.hash(sifre,6);
-                const newUser = await UserModel.create({isim,sifre:hashedsifre,id:seqId})
-                if(newUser){
-                    res.status(201).json(newUser)
-                }
-                else{
-                    res.status(400).send({meesage:"kullanıcı oluşturulamadi"})
-                }
-            })    
+            seqId=cd.seq
         }
-    })
+        const newComment = await Comment.create({id:seqId,yorum:comment,kullaniciIsim:kullaniciIsim,postId:id})
+        if(newComment){
+            res.json({success:true})
+        }
+        else{
+            res.json({success:false})
+        }
+    }) 
 })
-app.use("/user/get_one_post",async (req,res)=>{
-    res.setHeader("Access-Control-Allow-Credentials","true")
+app.use("/Admin/Delete_Comment",async (req,res)=>{
+    const {comment_id} = req.body;
+    Comment.findOneAndDelete({id:comment_id}).then((deleted_value=>{
+        if(deleted_value){
+            res.json({success:true})
+        }
+        else{
+            res.json({success:false})
+        }
+    }))
+})
+app.use("/User/Get_Comments",async (req,res)=>{
     const {id} = req.body;
-    PostModel.findOne({id:id}).then(data=>{res.status(200).send({"post":data})}).catch(err=>{console.log(err)})
-})
-app.use("/user/get_posts",async (req,res)=>{
-    res.setHeader("Access-Control-Allow-Credentials","true")
-    const pagination = 8 ;
-    const {pageNumber} = req.body;
-    PostModel.find({}).sort({"id" : "descending"}).skip((pageNumber-1)*pagination).limit(pagination).then(data=>{res.status(200).send({"postlar":data})}).catch(err=>{console.log(err)})
-})
-app.use("/user/get_lots_posts",async (req,res)=>{
-    res.setHeader("Access-Control-Allow-Credentials","true")
-    const pagination = 30 ;
-    const {pageNumber} = req.body;
-    PostModel.find({}).sort({"id" : "descending"}).skip((pageNumber-1)*pagination).limit(pagination).then(data=>{res.status(200).send({"postlar":data})}).catch(err=>{console.log(err)})
-})
-
-app.use("/user/get_comments",async (req,res)=>{
-    res.setHeader("Access-Control-Allow-Credentials","true")
-    const {id} = req.body;
-    PostModel.findOne({id:id}).then(data=>{res.status(200).send({"yorumlar":data.yorumlar})}).catch(err=>{console.log(err)})
-})
-app.use("/user/post_comment",async (req,res)=>{
-    res.setHeader("Access-Control-Allow-Credentials","true")
-    const {yorum,id,kullaniciId,kullaniciIsim} = req.body;
-    PostModel.findOneAndUpdate({id:id},{$push:{yorumlar:{kullaniciId:kullaniciId,yorum:yorum,kullaniciIsim:kullaniciIsim}}}).then(
-        UserModel.findOneAndUpdate({id:kullaniciId},{$push:{yorumlar:{postid:id,yorum:yorum}}}).then(res.status(201).send({"sonuc":"yorumunuz-başarili"})).catch(err=>{console.log(err)})
-        ).catch(err=>{console.log(err)})
+    Comment.find({postId:id}).then(data=>{
+        if(data.length!=0){
+            res.json({yorumlar:data})
+        }
+        else{
+            res.json({answer:"yorum yok"})
+        }
+    })  
 })
