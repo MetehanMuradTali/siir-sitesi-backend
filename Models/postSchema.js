@@ -1,10 +1,5 @@
-import mongoose from "mongoose";
-
+import mongoose from 'mongoose';
 const postSchema = mongoose.Schema({
-    id:{
-        type: Number,
-        required: true
-    },
     baslik:{
         type: String,
         required: true
@@ -13,17 +8,18 @@ const postSchema = mongoose.Schema({
         type: String,
         required: true
     },
-    like:{
-        type:[]
+    id:{
+        type: Number,
+        required: true
     },
     tarih:{
         type:Date,
         default:Date.now
     },
-    yorumlar:{
-        type:[]
-    }
+    
 })
 
 
-export default mongoose.model("PostModel",postSchema)
+const Post = mongoose.models.Post || mongoose.model('Post', postSchema);
+
+export default Post;

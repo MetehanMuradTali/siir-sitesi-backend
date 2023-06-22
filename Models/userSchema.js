@@ -1,10 +1,5 @@
 import mongoose from "mongoose";
-
 const userSchema = mongoose.Schema({
-    id:{
-        type: Number,
-        required: true
-    },
     isim:{
         type: String,
         required: true
@@ -13,12 +8,13 @@ const userSchema = mongoose.Schema({
         type: String,
         required: true
     },
-    yorumlar:{
-        type: []
-    },
-    begeniler:{
-        type:[]
+    role:{
+        type:String,
+        default:"user",
+        required:true,
     }
 })
 
-export default mongoose.model("UserModel",userSchema)
+const User = mongoose.models.User || mongoose.model('User', userSchema);
+
+export default User;
