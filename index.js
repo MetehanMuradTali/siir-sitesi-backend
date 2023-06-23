@@ -20,6 +20,10 @@ app.use(express.json())
 app.listen(4000,function(){
     mongoose.connect(process.env.MongoDB_Url).then(console.log("Veri tabanına bağlanma başarılı")).catch(err=> console.log(err))
 })
+app.use("/Cronjob",async (req,res)=>{
+    console.log("server is not frozen")
+    res.json({message:"server is not frozen"})
+})
 app.post("/User/Register",async (req,res)=>{
     const isim = req.body.isim
     const sifre = req.body.sifre
