@@ -29,16 +29,15 @@ app.post("/User/Register",async (req,res)=>{
     const sifre = req.body.sifre
     User.findOne({isim:isim}).then(async data=>{
         if(data){
-            res.status(418).send({meesage:"Kullanıcı ismi alınmış.Başka kullanici ismi seçin"})
+            res.json({error:"kullanıcı ismi alınmış"})   
         }
         else{
             const hashedsifre=await bcrypt.hash(sifre,6);
             await User.create({isim,sifre:hashedsifre}).then(newUser=>{
                 console.log("kullanici oluşturma başarili")
-                console.log(newUser)
-                res.status(201).json(newUser)
+                res.json(newUser)
             }).catch(err=>{
-                res.status(418).send({meesage:"kullanıcı oluşturulamadi"})
+                res.json({error:"şifre hatalı"})   
             })
           
         }
