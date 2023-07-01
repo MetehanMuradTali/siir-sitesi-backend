@@ -78,6 +78,9 @@ app.post("/User/AllPost",async (req,res)=>{
     const {pageNumber} = req.body;
     Post.find({}).sort({"id" : "descending"}).skip((pageNumber-1)*pagination).limit(pagination).then(data=>{res.status(200).json({"postlar":data})}).catch(err=>{console.log(err)})
 })
+app.post("/User/AllOfPosts",async (req,res)=>{
+    Post.find({}).then(data=>{res.status(200).json({"postlar":data})}).catch(err=>{console.log(err)})
+})
 app.post("/Admin/Post",async (req,res)=>{
     const {id} = req.body;
     Post.findOne({id:parseInt(id)}).then(data=>{console.log(data);res.status(200).json({"post":data})}).catch(err=>{console.log(err)})
